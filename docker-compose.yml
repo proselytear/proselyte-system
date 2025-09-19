@@ -191,13 +191,3 @@ volumes:
   loki_chunks:
   loki_index:
   loki_rules:
-
-
-
-
-
-
-
-
-
-
