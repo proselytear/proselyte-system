@@ -1,0 +1,27 @@
+{
+  "mappings": [
+    {
+      "request": {
+        "method": "POST",
+        "urlPath": "/v1/persons",
+        "bodyPatterns": [
+          { "matchesJsonPath": "$[?(@.email =~ /.+@.+\\..+/)]" }
+        ]
+      },
+      "response": {
+        "status": 201,
+        "body": "{ \"id\": \"3ddcecd5-5004-4a8a-9447-ed110912b7ee\" }",
+        "headers": { "Content-Type": "application/json" }
+      }
+    },
+    {
+      "request": {
+        "method": "DELETE",
+        "urlPathPattern": "/v1/persons/compensate-registration/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})"
+      },
+      "response": {
+        "status": 200
+      }
+    }
+  ]
+}
