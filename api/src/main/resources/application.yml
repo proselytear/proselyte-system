@@ -1,0 +1,76 @@
+server:
+  port: 8091
+
+application:
+  keycloak:
+    serverUrl: ${KEYCLOAK_URL:http://localhost:8080}
+    realmUrl: ${application.keycloak.serverUrl}/realms/${application.keycloak.realm}
+    tokenUrl: ${application.keycloak.realmUrl}/protocol/openid-connect/token
+    realm: individual
+    clientId: individual
+    clientSecret: FaxzBgk7pkyattBrV8MlVCVg80jjZKo5
+    adminUsername: admin
+    adminPassword: admin
+    adminClientId: admin-cli
+
+spring:
+  application:
+    name: individual-api
+  security:
+    oauth2:
+      client:
+        registration:
+          keycloak:
+            provider: keycloak
+            client-id: ${application.keycloak.clientId}
+            client-secret: ${application.keycloak.clientSecret}
+            client-name: individual
+            authorization-grant-type: authorization_code
+            scope: openid, profile, email
+      resourceserver:
+        jwt:
+          issuer-uri: ${application.keycloak.serverUrl}/realms/${application.keycloak.realm}
+
+auth:
+  name: ${AUTH_API_NAME:auth}
+  url: ${AUTH_API_URL:http://localhost:8080}
+
+users:
+  name: ${AUTH_API_NAME:kcUsers}
+  url: ${AUTH_API_NAME:http://localhost:8080}
+
+person:
+  name: ${PERSONS_API_NAME:person}
+  url: ${PERSONS_API_URL:http://localhost:8092}
+
+logging:
+  config: "classpath:logback.xml"
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    prometheus:
+      access: read_only
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+  tracing:
+    enabled: true
+    sampling:
+      probability: 1.0
+
+otel:
+  exporter:
+    otlp:
+      endpoint:
+        ${OTLP_EXPORTER_ENDPOINT:http://localhost:4318}
+      protocol: http/protobuf
+  logs:
+    exporter: none
+  metrics:
+    exporter: none
+

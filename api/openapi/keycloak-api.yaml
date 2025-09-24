@@ -1,0 +1,359 @@
+openapi: 3.0.0
+info:
+  title: Keycloak Client Service
+  version: 1.0.0
+  description: >
+    Сервис-обёртка над Keycloak Admin/Token API.
+    Поддерживает: логин/рефреш, создание пользователя **с постоянным паролем**,
+    чтение пользователя, смену пароля (temporary=false) и удаление.
+
+servers:
+  - url: http://localhost:8085
+
+tags:
+  - name: Auth
+    description: Получение access/refresh токенов (через публичный OIDC endpoint Keycloak)
+  - name: Users
+    description: Операции управления пользователями (через Admin API Keycloak)
+
+paths:
+  /v1/keycloak/token:
+    post:
+      tags: [ Auth ]
+      summary: Получить токен по паролю (Resource Owner Password Credentials)
+      operationId: kcLogin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserLoginRequest'
+            examples:
+              ok:
+                value:
+                  email: user@example.com
+                  password: secret
+      responses:
+        '200':
+          description: Успех
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '400':
+          description: Неверные параметры запроса
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '401':
+          description: Неверные учетные данные
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /v1/keycloak/token/refresh:
+    post:
+      tags: [ Auth ]
+      summary: Обновить access token по refresh token
+      operationId: kcRefreshToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TokenRefreshRequest' }
+            examples:
+              ok:
+                value:
+                  refresh_token: eyJhbGciOi...
+      responses:
+        '200':
+          description: Успех
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenResponse' }
+        '401':
+          description: Просроченный/недействительный refresh token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /v1/keycloak/users:
+    post:
+      tags: [ Users ]
+      summary: Создать пользователя в Keycloak с постоянным паролем
+      description: >
+        Создание пользователя с установленным паролем `temporary=false`.  
+        Если пароль не задан, запрос будет отклонён.
+      operationId: kcCreateUserWithPermanentPassword
+      security:
+        - bearerAuth: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateUserRequest' }
+            examples:
+              ok:
+                value:
+                  username: john.doe
+                  email: john.doe@example.com
+                  firstName: John
+                  lastName: Doe
+                  enabled: true
+                  emailVerified: false
+                  password: "Str0ng-P@ss!"
+                  attributes:
+                    department: [ "Payments" ]
+      responses:
+        '201':
+          description: Пользователь создан
+          headers:
+            Location:
+              description: URL ресурса пользователя в Keycloak (проксируется Location от KC)
+              schema:
+                type: string
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserIdResponse' }
+        '400':
+          description: Ошибка валидации/конфликта данных
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '409':
+          description: Пользователь уже существует
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+    get:
+      tags: [ Users ]
+      summary: Поиск пользователей по email (точное совпадение)
+      operationId: kcFindUsersByEmail
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - in: query
+          name: email
+          required: true
+          schema:
+            type: string
+            format: email
+      responses:
+        '200':
+          description: Результаты поиска
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/KeycloakUser' }
+        '400':
+          description: Ошибка параметров
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /v1/keycloak/users/{id}:
+    get:
+      tags: [ Users ]
+      summary: Получить пользователя по ID
+      operationId: kcGetUserById
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - $ref: '#/components/parameters/UserIdParam'
+      responses:
+        '200':
+          description: Пользователь
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/KeycloakUser' }
+        '404':
+          description: Не найден
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+    delete:
+      tags: [ Users ]
+      summary: Удалить пользователя по ID
+      operationId: kcDeleteUser
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - $ref: '#/components/parameters/UserIdParam'
+      responses:
+        '204':
+          description: Удалено
+        '404':
+          description: Не найден
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /v1/keycloak/users/{id}/password:
+    put:
+      tags: [ Users ]
+      summary: Установить пароль пользователю (temporary=false по умолчанию)
+      description: >
+        Устанавливает постоянный пароль (temporary=false).
+        Может использоваться для первичной установки или смены пароля.
+      operationId: kcSetPermanentPassword
+      security:
+        - bearerAuth: [ ]
+      parameters:
+        - $ref: '#/components/parameters/UserIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SetPasswordRequest' }
+            examples:
+              ok:
+                value:
+                  password: "N3w-Strong-Password!"
+                  temporary: false
+      responses:
+        '204':
+          description: Пароль установлен
+        '400':
+          description: Ошибка валидации
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '404':
+          description: Пользователь не найден
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >
+        Админский JWT для доступа к Admin API Keycloak. Обычно выдается по client credentials
+        или по логину администратора; хранится на стороне сервиса.
+
+  parameters:
+    UserIdParam:
+      name: id
+      in: path
+      required: true
+      description: Внутренний ID пользователя Keycloak (UUID)
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    # -------- Auth ----------
+    UserLoginRequest:
+      type: object
+      required: [ email, password ]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+      description: >
+        Для совместимости с вашим Individuals API. На стороне сервиса будет отправлен
+        на `/protocol/openid-connect/token` с grant_type=password, client_id/secret из конфигурации.
+
+    TokenRefreshRequest:
+      type: object
+      required: [ refresh_token ]
+      properties:
+        refresh_token:
+          type: string
+
+    TokenResponse:
+      type: object
+      properties:
+        access_token: { type: string }
+        refresh_token: { type: string }
+        expires_in:
+          type: integer
+          format: int64
+        token_type:
+          type: string
+          example: Bearer
+
+    ErrorResponse:
+      type: object
+      properties:
+        error: { type: string, example: "User creation failed" }
+        status: { type: integer, example: 400 }
+
+    # -------- Users ----------
+    CreateUserRequest:
+      type: object
+      required: [ username, email, password ]
+      properties:
+        username:
+          type: string
+          description: Уникальное имя пользователя в Keycloak
+        email:
+          type: string
+          format: email
+        firstName:
+          type: string
+        lastName:
+          type: string
+        enabled:
+          type: boolean
+          default: true
+        emailVerified:
+          type: boolean
+          default: false
+        password:
+          type: string
+          description: >
+            Пароль, который будет установлен пользователю.
+            На стороне сервиса всегда применяется temporary=false.
+        attributes:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          description: Произвольные атрибуты пользователя (мульти-значные)
+
+    SetPasswordRequest:
+      type: object
+      required: [ password ]
+      properties:
+        password:
+          type: string
+        temporary:
+          type: boolean
+          default: false
+          description: Должно быть false для постоянного пароля
+
+    UserIdResponse:
+      type: object
+      required: [ id ]
+      properties:
+        id:
+          type: string
+          format: uuid
+      description: Идентификатор созданного пользователя в Keycloak
+
+    KeycloakUser:
+      type: object
+      description: Упрощённая проекция пользователя из Keycloak Admin API
+      properties:
+        id: { type: string, format: uuid }
+        username: { type: string }
+        email: { type: string, format: email }
+        firstName: { type: string }
+        lastName: { type: string }
+        enabled: { type: boolean }
+        emailVerified: { type: boolean }
+        attributes:
+          type: object
+          additionalProperties:
+            type: array
+            items: { type: string }

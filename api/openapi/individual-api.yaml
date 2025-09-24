@@ -1,0 +1,274 @@
+openapi: 3.0.0
+info:
+  title: Individuals API
+  description: REST API для регистрации, логина, обновления токена и получения информации о пользователе через Keycloak, а также CRUD-операций с персональными данными.
+  version: 1.0.1
+servers:
+  - url: http://localhost:8081
+
+paths:
+  /v1/auth/registration:
+    post:
+      summary: Регистрация пользователя
+      operationId: registration
+      tags: [ Auth ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IndividualWriteDto'
+      responses:
+        '201':
+          description: Успешная регистрация
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '400':
+          description: Ошибка валидации
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Пользователь уже существует
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/auth/login:
+    post:
+      summary: Аутентификация пользователя
+      operationId: login
+      tags: [ Auth ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserLoginRequest'
+      responses:
+        '200':
+          description: Успешная аутентификация
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '401':
+          description: Неверный логин или пароль
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/auth/refresh-token:
+    post:
+      summary: Обновление токена доступа
+      operationId: refreshToken
+      tags: [ Auth ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+      responses:
+        '200':
+          description: Токен успешно обновлён
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '401':
+          description: Недействительный или просроченный refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /v1/auth/me:
+    get:
+      summary: Получение данных текущего пользователя
+      operationId: getMe
+      tags: [ Auth ]
+      security:
+        - bearerAuth: [ ]
+      responses:
+        '200':
+          description: Данные пользователя
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserInfoResponse'
+        '401':
+          description: Недействительный токен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Пользователь не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    # --- Auth DTOs ---
+    UserLoginRequest:
+      type: object
+      required: [ email, password ]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    TokenRefreshRequest:
+      type: object
+      required: [ refresh_token ]
+      properties:
+        refresh_token:
+          type: string
+
+    TokenResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        expires_in:
+          type: integer
+          format: int64
+        token_type:
+          type: string
+          example: Bearer
+
+    UserInfoResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+          format: email
+        roles:
+          type: array
+          items:
+            type: string
+        created_at:
+          type: string
+          format: date-time
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        status:
+          type: integer
+
+    # --- Person DTOs (read/write) ---
+    IndividualWriteDto:
+      type: object
+      required:
+        - email
+        - password
+        - confirm_password
+        - firstName
+        - lastName
+        - passport_number
+        - phone_number
+        - address
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+        confirm_password:
+          type: string
+        passport_number:
+          type: string
+        phone_number:
+          type: string
+        address:
+          $ref: '#/components/schemas/AddressWriteDto'
+
+    IndividualWriteResponseDto:
+      type: object
+      required: [ id ]
+      properties:
+        id:
+          type: string
+          format: uuid
+
+    IndividualDto:
+      type: object
+      required:
+        - email
+        - firstName
+        - lastName
+        - passport_number
+        - phone_number
+        - address
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+          format: email
+        passport_number:
+          type: string
+        phone_number:
+          type: string
+        address:
+          $ref: '#/components/schemas/AddressDto'
+
+    IndividualPageDto:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/IndividualDto'
+
+    AddressWriteDto:
+      type: object
+      properties:
+        address:
+          type: string
+        zip_code:
+          type: string
+        city:
+          type: string
+        country_code:
+          type: string
+
+    AddressDto:
+      type: object
+      properties:
+        address:
+          type: string
+        zip_code:
+          type: string
+        city:
+          type: string
+        country_code:
+          type: string
