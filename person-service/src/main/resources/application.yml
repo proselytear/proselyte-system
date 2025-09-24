@@ -1,0 +1,65 @@
+server:
+  port: 8092
+
+spring:
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5434}/person
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+  flyway:
+    enabled: true
+    validate-on-migrate: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      org.hibernate:
+        envers:
+          autoRegisterListeners: true
+          audit_table_suffix: _history
+          default_schema: person_history
+          store_data_at_delete: true
+          revision_field_name: revision
+          revision_type_field_name: revision_type
+          revision_sequence_name: person_history.revinfo_seq
+        hibernate:
+          default_schema: person
+          show_sql: ${SHOW_SQL:true}
+          format_sql: ${FORMAT_SQL:true}
+          highlight_sql: ${HIGHLIGHT_SQL:true}
+          session.events.log.LOG_QUERIES_SLOWER_THAN_MS: ${SLOW_SQL_QUERY_INDICATOR_MS:1500}
+          hbm2ddl:
+            auto: validate
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    prometheus:
+      access: read_only
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+  tracing:
+    enabled: true
+    sampling:
+      probability: 1.0
+
+otel:
+  exporter:
+    otlp:
+      endpoint: ${OTLP_EXPORTER_ENDPOINT:http://localhost:4318}
+      protocol: http/protobuf
+  logs:
+    exporter: none
+  metrics:
+    exporter: none
+logging:
+  config: "classpath:logback.xml"

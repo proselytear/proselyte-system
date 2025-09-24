@@ -1,0 +1,226 @@
+openapi: 3.0.0
+info:
+  title: Persons API
+  description: REST API для взаимодействия с Person сервисом.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8082
+
+paths:
+  /v1/persons:
+    post:
+      summary: Регистрация пользователя
+      operationId: "registration"
+      tags:
+        - Person
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IndividualWriteDto'
+      responses:
+        '201':
+          description: Успешная регистрация
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IndividualWriteResponseDto'
+    get:
+      summary: Get persons
+      operationId: "findAllByEmail"
+      tags:
+        - Person
+      parameters:
+        - in: query
+          name: email
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+              format: email
+      responses:
+        '201':
+          description: Successfully found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IndividualPageDto'
+
+  /v1/persons/{id}:
+    get:
+      summary: Get person by id
+      operationId: "findById"
+      tags:
+        - Person
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+          '201':
+            description: Successfully found
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/IndividualDto'
+    put:
+      summary: Update individual
+      operationId: "update"
+      tags:
+        - Person
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IndividualWriteDto'
+      responses:
+        '201':
+          description: Successfully updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IndividualWriteResponseDto'
+    delete:
+      summary: soft delete person by id
+      operationId: "delete"
+      tags:
+        - Person
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successfully deleted
+
+  /v1/persons/compensate-registration/{id}:
+    delete:
+      summary: compensate-registration, hard delete person by id
+      operationId: "compensateRegistration"
+      tags:
+        - Person
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successfully deleted
+
+
+components:
+  schemas:
+    IndividualWriteResponseDto:
+      type: object
+      required: [ id ]
+      properties:
+        id:
+          type: string
+
+    IndividualWriteDto:
+      type: object
+      required: [
+        email,
+        firstName,
+        lastName,
+        passport_number,
+        phone_number,
+        address,
+      ]
+      properties:
+        firstName:
+          type: string
+          format: email
+        lastName:
+          type: string
+          format: email
+        email:
+          type: string
+          format: email
+        passport_number:
+          type: string
+        phone_number:
+          type: string
+        address:
+          $ref: '#/components/schemas/AddressWriteDto'
+
+    AddressWriteDto:
+      type: object
+      required: [ ]
+      properties:
+        address:
+          type: string
+        zip_code:
+          type: string
+        city:
+          type: string
+        country_code:
+          type: string
+
+    IndividualDto:
+      type: object
+      required: [
+        email,
+        firstName,
+        lastName,
+        passport_number,
+        phone_number,
+        address,
+      ]
+      properties:
+        firstName:
+          type: string
+          format: email
+        lastName:
+          type: string
+          format: email
+        email:
+          type: string
+          format: email
+        passport_number:
+          type: string
+        phone_number:
+          type: string
+        address:
+          $ref: '#/components/schemas/AddressDto'
+
+    AddressDto:
+      type: object
+      required: [ ]
+      properties:
+        address:
+          type: string
+        zip_code:
+          type: string
+        city:
+          type: string
+        country_code:
+          type: string
+
+    IndividualPageDto:
+      type: object
+      required: [ ]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/IndividualDto'
