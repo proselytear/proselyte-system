@@ -1,0 +1,30 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+LAYOUT_LEFT_RIGHT()
+
+Person_Ext(client, "Клиент API", "Individuals API / тесты / Postman")
+
+Container_Boundary(person_svc, "Persons Service (:8092)") {
+  Component(controller, "IndividualRestControllerV1", "Spring Web", "REST эндпоинты /v1/persons")
+  Component(service, "IndividualService", "Business logic", "Валидация, оркестрация CRUD")
+  Component(mapper, "MapStruct mappers", "MapStruct", "DTO ↔ Entity")
+  Component(repo, "IndividualRepository", "Spring Data JPA", "Доступ к БД")
+  Component(flyway, "Flyway", "DB migrations", "Миграции схемы")
+  Component(metrics, "Micrometer / Actuator", "Observability", "/actuator/prometheus")
+  Component(otel, "OpenTelemetry SDK", "OTLP exporter", "Трейсы")
+}
+
+ContainerDb(db, "Person DB", "PostgreSQL (:5434->5432)", "Персональные данные")
+
+System_Ext(prom, "Prometheus", "Метрики :9090")
+System_Ext(tempo, "Tempo", "Трейсы :3200")
+
+Rel(client, controller, "HTTP/JSON")
+Rel(controller, service, "Методы сервиса")
+Rel(service, repo, "JPA")
+Rel(mapper, service, "Маппинг DTO/Entity")
+Rel(repo, db, "JDBC")
+Rel(person_svc, prom, "Micrometer scrape /actuator/prometheus")
+Rel(person_svc, tempo, "OTLP traces")
+
+@enduml

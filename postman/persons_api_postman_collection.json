@@ -1,0 +1,292 @@
+{
+  "info": {
+    "name": "Persons API Collection",
+    "_postman_id": "2d9b2e74-9c2a-4d3a-9d9c-11c1c4e8c001",
+    "description": "Готовые запросы для Persons API.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8092" },
+    { "key": "personId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "1) Create Person (POST /v1/persons)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 201', function () {",
+              "  pm.response.to.have.status(201);",
+              "});",
+              "let json = {};",
+              "try { json = pm.response.json(); } catch (e) {}",
+              "if (json && json.id) {",
+              "  pm.environment.set('personId', json.id);",
+              "  pm.collectionVariables.set('personId', json.id);",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"firstName\": \"Ivan\",\n  \"lastName\": \"Petrov\",\n  \"email\": \"ivan.petrov@example.com\",\n  \"passport_number\": \"4010 123456\",\n  \"phone_number\": \"+47 912 34 567\",\n  \"address\": {\n    \"address\": \"Karl Johans gate 15\",\n    \"zip_code\": \"0154\",\n    \"city\": \"Oslo\",\n    \"country_code\": \"NOR\"\n  }\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/v1/persons",
+          "host": ["{{baseUrl}}"],
+          "path": ["v1","persons"]
+        }
+      }
+    },
+    {
+      "name": "2) Create Person (POST /v1/persons) – Another sample",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 201', function () {",
+              "  pm.response.to.have.status(201);",
+              "});",
+              "let json = {};",
+              "try { json = pm.response.json(); } catch (e) {}",
+              "if (json && json.id) {",
+              "  pm.environment.set('personId2', json.id);",
+              "  pm.collectionVariables.set('personId2', json.id);",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"firstName\": \"Anna\",\n  \"lastName\": \"Sidorova\",\n  \"email\": \"anna.sidorova@example.com\",\n  \"passport_number\": \"4011 654321\",\n  \"phone_number\": \"+47 913 22 111\",\n  \"address\": {\n    \"address\": \"Dronning Eufemias gate 35\",\n    \"zip_code\": \"0191\",\n    \"city\": \"Oslo\",\n    \"country_code\": \"NOR\"\n  }\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/v1/persons",
+          "host": ["{{baseUrl}}"],
+          "path": ["v1","persons"]
+        }
+      }
+    },
+    {
+      "name": "3) Get Persons (GET /v1/persons)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200 or 201', function () {",
+              "  pm.expect([200,201]).to.include(pm.response.code);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/v1/persons",
+          "host": ["{{baseUrl}}"],
+          "path": ["v1","persons"]
+        }
+      }
+    },
+    {
+      "name": "4) Get Persons by emails (GET /v1/persons?email=..&email=..)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200 or 201', function () {",
+              "  pm.expect([200,201]).to.include(pm.response.code);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/v1/persons?email=ivan.petrov%40example.com&email=anna.sidorova%40example.com",
+          "host": ["{{baseUrl}}"],
+          "path": ["v1","persons"],
+          "query": [
+            { "key": "email", "value": "ivan.petrov@example.com" },
+            { "key": "email", "value": "anna.sidorova@example.com" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "5) Get Person by ID (GET /v1/persons/{id})",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (!pm.variables.get('personId')) {",
+              "  pm.variables.set('personId', pm.collectionVariables.get('personId') || pm.environment.get('personId') || '11111111-2222-3333-4444-555555555555');",
+              "}"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200 or 201', function () {",
+              "  pm.expect([200,201]).to.include(pm.response.code);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/v1/persons/{{personId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["v1","persons","{{personId}}"]
+        }
+      }
+    },
+    {
+      "name": "6) Update Person (PUT /v1/persons/{id})",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (!pm.variables.get('personId')) {",
+              "  pm.variables.set('personId', pm.collectionVariables.get('personId') || pm.environment.get('personId') || '11111111-2222-3333-4444-555555555555');",
+              "}"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 201', function () {",
+              "  pm.response.to.have.status(201);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"firstName\": \"Ivan-Updated\",\n  \"lastName\": \"Petrov\",\n  \"email\": \"ivan.petrov@example.com\",\n  \"passport_number\": \"4010 123456\",\n  \"phone_number\": \"+47 999 88 777\",\n  \"address\": {\n    \"address\": \"Storgata 7\",\n    \"zip_code\": \"0181\",\n    \"city\": \"Oslo\",\n    \"country_code\": \"NOR\"\n  }\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/v1/persons/{{personId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["v1","persons","{{personId}}"]
+        }
+      }
+    },
+    {
+      "name": "7) Soft Delete Person (DELETE /v1/persons/{id})",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (!pm.variables.get('personId')) {",
+              "  pm.variables.set('personId', pm.collectionVariables.get('personId') || pm.environment.get('personId') || '11111111-2222-3333-4444-555555555555');",
+              "}"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/v1/persons/{{personId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["v1","persons","{{personId}}"]
+        }
+      }
+    },
+    {
+      "name": "8) Compensate Registration (hard delete) (DELETE /v1/persons/compensate-registration/{id})",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (!pm.variables.get('personId')) {",
+              "  pm.variables.set('personId', pm.collectionVariables.get('personId') || pm.environment.get('personId') || '11111111-2222-3333-4444-555555555555');",
+              "}"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/v1/persons/compensate-registration/{{personId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["v1","persons","compensate-registration","{{personId}}"]
+        }
+      }
+    }
+  ]
+}

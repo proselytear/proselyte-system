@@ -1,0 +1,222 @@
+{
+  "info": {
+    "name": "Individuals API - Auth (AuthRestControllerV1)",
+    "_postman_id": "3d8b6c2f-0a7f-4a5f-9b4e-1e3d2b4e9a01",
+    "description": "Коллекция для тестирования AuthRestControllerV1: регистрация, логин, получение профиля и обновление токена.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8091" },
+    { "key": "email", "value": "user+{{timestamp}}@example.com" },
+    { "key": "password", "value": "Qwerty_123" },
+    { "key": "firstName", "value": "John" },
+    { "key": "lastName", "value": "Doe" },
+    { "key": "passport_number", "value": "1234 567890" },
+    { "key": "phone_number", "value": "+1234567890" },
+    { "key": "address", "value": "Some street 1" },
+    { "key": "zip_code", "value": "10001" },
+    { "key": "city", "value": "NY" },
+    { "key": "country_code", "value": "USA" }
+  ],
+  "item": [
+    {
+      "name": "0) Setup variables (timestamp/email)",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "const ts = Date.now();",
+              "pm.collectionVariables.set('timestamp', String(ts));",
+              "if (!pm.collectionVariables.get('email')) {",
+              "  pm.collectionVariables.set('email', `user+${ts}@example.com`);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Variables prepared', function () {",
+              "  pm.expect(pm.collectionVariables.get('timestamp')).to.exist;",
+              "  pm.expect(pm.collectionVariables.get('email')).to.include('@');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/actuator/health"
+      }
+    },
+    {
+      "name": "1) Registration (POST /v1/auth/registration)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"firstName\": \"{{firstName}}\",\n  \"lastName\": \"{{lastName}}\",\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\",\n  \"confirm_password\": \"{{password}}\",\n  \"passport_number\": \"{{passport_number}}\",\n  \"phone_number\": \"{{phone_number}}\",\n  \"address\": {\n    \"address\": \"{{address}}\",\n    \"zip_code\": \"{{zip_code}}\",\n    \"city\": \"{{city}}\",\n    \"country_code\": \"{{country_code}}\"\n  }\n}"
+        },
+        "url": "{{baseUrl}}/v1/auth/registration"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('201 Created', function () { pm.response.to.have.status(201); });",
+              "let json = {}; try { json = pm.response.json(); } catch (e) {}",
+              "pm.test('Response has tokens', function () {",
+              "  pm.expect(json).to.have.property('access_token');",
+              "  pm.expect(json).to.have.property('refresh_token');",
+              "});",
+              "if (json && json.access_token) pm.collectionVariables.set('access_token', json.access_token);",
+              "if (json && json.refresh_token) pm.collectionVariables.set('refresh_token', json.refresh_token);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2) Login (POST /v1/auth/login)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}"
+        },
+        "url": "{{baseUrl}}/v1/auth/login"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('200 OK', function () { pm.response.to.have.status(200); });",
+              "let json = {}; try { json = pm.response.json(); } catch (e) {}",
+              "pm.test('TokenResponse structure', function () {",
+              "  pm.expect(json).to.have.property('access_token');",
+              "  pm.expect(json).to.have.property('refresh_token');",
+              "});",
+              "if (json.access_token) pm.collectionVariables.set('access_token', json.access_token);",
+              "if (json.refresh_token) pm.collectionVariables.set('refresh_token', json.refresh_token);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3) Me (GET /v1/auth/me)",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{access_token}}", "type": "text" }
+        ],
+        "url": "{{baseUrl}}/v1/auth/me"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('200 OK', function () { pm.response.to.have.status(200); });",
+              "let json = {}; try { json = pm.response.json(); } catch (e) {}",
+              "pm.test('UserInfoResponse shape', function () {",
+              "  pm.expect(json).to.have.property('email');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "4) Refresh token (POST /v1/auth/refresh-token)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}"
+        },
+        "url": "{{baseUrl}}/v1/auth/refresh-token"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('200 OK', function () { pm.response.to.have.status(200); });",
+              "let json = {}; try { json = pm.response.json(); } catch (e) {}",
+              "pm.test('New tokens received', function () {",
+              "  pm.expect(json).to.have.property('access_token');",
+              "});",
+              "if (json.access_token) pm.collectionVariables.set('access_token', json.access_token);",
+              "if (json.refresh_token) pm.collectionVariables.set('refresh_token', json.refresh_token);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "5) Negative - Login wrong password (401)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"wrong-pass\"\n}"
+        },
+        "url": "{{baseUrl}}/v1/auth/login"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('401 Unauthorized', function () { pm.response.to.have.status(401); });"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "6) Negative - Me without token (401)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/v1/auth/me"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('401 Unauthorized', function () { pm.response.to.have.status(401); });"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+Person_Ext(dev, "Клиент", "Postman / curl / Frontend")
+
+System(system, "Proselyte System", "Учебное приложение", "Аутентификация через Keycloak, регистрация и управление персональными данными")
+
+System_Ext(keycloak, "Keycloak", "IdP (OAuth2/OIDC) :8080")
+System_Ext(prom, "Prometheus", "Метрики :9090")
+System_Ext(tempo, "Tempo", "Трейсы (OTLP) :3200")
+System_Ext(loki, "Loki", "Логи :3100")
+System_Ext(grafana, "Grafana", "Дашборды :3000")
+System_Ext(nexus, "Nexus", "Maven snapshots :8081")
+
+Rel(dev, system, "REST / JSON")
+Rel(system, keycloak, "OAuth2 / OpenID Connect")
+Rel(system, prom, "Micrometer /actuator/prometheus")
+Rel(system, tempo, "OTLP (traces)")
+Rel(system, loki, "Логи (appender/promtail)")
+Rel(grafana, prom, "Чтение метрик")
+Rel(grafana, tempo, "Чтение трейсов")
+Rel(grafana, loki, "Чтение логов")
+Rel(system, nexus, "Publish SDK (person-api)")
+
+@enduml

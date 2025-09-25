@@ -1,0 +1,35 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+LAYOUT_LEFT_RIGHT()
+
+Person_Ext(client, "Клиент API", "Frontend / Postman / curl")
+
+Container_Boundary(api, "Individuals API (:8091)") {
+  Component(authController, "AuthRestControllerV1", "Spring WebFlux", "POST /v1/auth/registration, /login, /refresh-token; GET /me")
+  Component(userService, "UserService", "Business logic", "Регистрация пользователя: создание Person + Keycloak")
+  Component(tokenService, "TokenService", "Business logic", "Login/Refresh против Keycloak")
+  Component(personClient, "PersonApiClient (Feign)", "HTTP client", "Вызовы в person-service: /v1/persons")
+  Component(authClient, "AuthApiClient / UsersApiClient (Feign)", "HTTP client", "Вызовы в Keycloak (token/users)")
+  Component(mapper, "MapStruct mappers", "MapStruct", "DTO маппинг")
+  Component(security, "Spring Security (Resource Server)", "JWT", "Проверка токенов / issuer-uri")
+  Component(metrics, "LoginMetricAspect + Micrometer", "Observability", "Счётчик logins, /actuator/prometheus")
+  Component(otel, "OpenTelemetry SDK", "OTLP exporter", "Трейсы")
+}
+
+System_Ext(keycloak, "Keycloak", "IdP (OAuth2/OIDC) :8080")
+Container_Ext(personSvc, "Persons Service", "Spring MVC/JPA, :8092", "CRUD персональных данных")
+System_Ext(prom, "Prometheus", "Метрики :9090")
+System_Ext(tempo, "Tempo", "Трейсы :3200")
+
+Rel(client, authController, "HTTP/JSON")
+Rel(authController, userService, "Регистрация / Me")
+Rel(authController, tokenService, "Login / Refresh")
+Rel(userService, personClient, "Feign -> /v1/persons")
+Rel(userService, authClient, "Создание пользователя в KC")
+Rel(tokenService, authClient, "Получение/обновление токена")
+Rel(personClient, personSvc, "REST")
+Rel(authClient, keycloak, "REST")
+Rel(api, prom, "Micrometer scrape /actuator/prometheus")
+Rel(api, tempo, "OTLP traces")
+
+@enduml

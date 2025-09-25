@@ -1,0 +1,33 @@
+@startuml
+' Можно так: C4_Container.puml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+LAYOUT_LEFT_RIGHT()
+
+Person_Ext(client, "Клиент", "Postman / curl / Frontend")
+
+System_Boundary(sys, "Proselyte System") {
+  Container(api, "Individuals API", "Spring Boot WebFlux, :8091", "Auth/Registration; интеграция с Keycloak и Persons Service")
+  Container(persons, "Persons Service", "Spring Boot MVC/JPA, :8092", "CRUD персональных данных")
+  ContainerDb(psql, "Person DB", "PostgreSQL, :5434->5432", "Хранение персональных данных")
+}
+
+System_Ext(kc, "Keycloak", "IdP (OAuth2/OIDC) :8080")
+System_Ext(prom, "Prometheus", "Метрики :9090")
+System_Ext(tempo, "Tempo", "Трейсы (OTLP) :3200")
+System_Ext(loki, "Loki", "Логи :3100")
+System_Ext(grafana, "Grafana", "Дашборды :3000")
+
+Rel(client, api, "REST")
+Rel(api, kc, "OAuth2/OIDC")
+Rel(api, persons, "Feign / REST")
+Rel(persons, psql, "JDBC")
+
+Rel(api, prom, "Micrometer /actuator/prometheus")
+Rel(persons, prom, "Micrometer /actuator/prometheus")
+Rel(api, tempo, "OTLP (traces)")
+Rel(persons, tempo, "OTLP (traces)")
+Rel(api, loki, "Логи")
+Rel(grafana, prom, "Чтение метрик")
+Rel(grafana, tempo, "Чтение трейсов")
+Rel(grafana, loki, "Чтение логов")
+@enduml
