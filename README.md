@@ -366,6 +366,6 @@ otel:
 ---
 
 ## Автор
-[Eugene Suleimanov](https://github.com/proselytear)
-[Vladislav Kolyago](https://github.com/kolyago-vladislav)
-[Software Engineering Telegram](https://t.me/esuleimanov)
+* [Eugene Suleimanov](https://github.com/proselytear)
+* [Vladislav Kolyago](https://github.com/kolyago-vladislav)
+* [Software Engineering Telegram](https://t.me/esuleimanov)
