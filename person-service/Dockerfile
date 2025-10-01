@@ -15,7 +15,6 @@ COPY src ./src
 COPY openapi ./openapi
 
 RUN gradle --no-daemon clean build -x test
-RUN gradle publish --info
 
 FROM eclipse-temurin:24-jre
 

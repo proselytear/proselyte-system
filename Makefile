@@ -1,10 +1,11 @@
-DOCKER_COMPOSE = docker-compose
+# Auto-detect docker compose command
+DOCKER_COMPOSE := $(shell docker compose version > /dev/null 2>&1 && echo "docker compose" || echo "docker-compose")
 NEXUS_URL = http://localhost:8081
 INFRA_SERVICES ?= nexus keycloak person-postgres prometheus grafana tempo loki
 
-.PHONY: all up start stop clean logs rebuild infra infra-logs infra-stop
+.PHONY: all up start stop clean logs rebuild infra infra-logs infra-stop publish-artifacts
 
-all: up build-artifacts start
+all: up build-artifacts publish-artifacts start
 
 ifeq ($(OS),Windows_NT)
 WAIT_CMD = powershell -Command "while ($$true) { \
@@ -31,6 +32,18 @@ up:
 
 build-artifacts:
 	@$(DOCKER_COMPOSE) build persons-api --no-cache
+
+publish-artifacts:
+	@echo "Publishing artifacts to Nexus..."
+	@docker run --rm \
+		--add-host=host.docker.internal:host-gateway \
+		-v $(PWD)/person-service:/home/gradle/project \
+		-w /home/gradle/project \
+		-e NEXUS_URL=http://host.docker.internal:8081/repository/maven-snapshots \
+		-e NEXUS_USERNAME=admin \
+		-e NEXUS_PASSWORD=admin \
+		gradle:8.14.2-jdk24 \
+		gradle publish --no-daemon --info
 
 start:
 	$(DOCKER_COMPOSE) up -d
