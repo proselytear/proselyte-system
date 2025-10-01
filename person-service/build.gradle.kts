@@ -275,23 +275,18 @@ publishing {
         foundSpecifications.forEach { specFile ->
             val name = specFile.nameWithoutExtension
             val jarBaseName = name
-            var jarFile = file("build/libs")
-                .listFiles()
-                ?.firstOrNull { it.name.contains(name) && (it.extension == "jar" || it.extension == "zip") }
+            val jarTaskName = buildJarTaskName(name)
 
-            if (jarFile != null) {
-                logger.lifecycle("publishing: ${jarFile.name}")
+            create<MavenPublication>("publish${name.replaceFirstChar(Char::uppercase)}Jar") {
+                // Reference the JAR task directly instead of looking for files at configuration time
+                artifact(tasks.named(jarTaskName))
+                groupId = "net.proselyte"
+                artifactId = jarBaseName
+                version = "1.0.0-SNAPSHOT"
 
-                create<MavenPublication>("publish${name.replaceFirstChar(Char::uppercase)}Jar") {
-                    artifact(jarFile)
-                    groupId = "net.proselyte"
-                    artifactId = jarBaseName
-                    version = "1.0.0-SNAPSHOT"
-
-                    pom {
-                        this.name.set("Generated API $jarBaseName")
-                        this.description.set("OpenAPI generated code for $jarBaseName")
-                    }
+                pom {
+                    this.name.set("Generated API $jarBaseName")
+                    this.description.set("OpenAPI generated code for $jarBaseName")
                 }
             }
         }

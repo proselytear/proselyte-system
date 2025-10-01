@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 FROM gradle:8.14.2-jdk24 AS build
 ARG NEXUS_URL=http://host.docker.internal:8081/repository/maven-snapshots
 ARG NEXUS_USERNAME=admin
@@ -9,12 +10,22 @@ ENV NEXUS_PASSWORD=${NEXUS_PASSWORD}
 
 WORKDIR /home/gradle/project
 
-COPY build.gradle.kts .
-COPY settings.gradle.kts .
+# Copy only dependency definition files first (for Docker layer caching)
+COPY build.gradle.kts settings.gradle.kts gradle.properties ./
+
+# Download dependencies (this layer will be cached if build files don't change)
+RUN --mount=type=cache,target=/home/gradle/.gradle/caches \
+    --mount=type=cache,target=/home/gradle/.gradle/wrapper \
+    gradle --no-daemon dependencies --refresh-dependencies || true
+
+# Now copy source code
 COPY src ./src
 COPY openapi ./openapi
 
-RUN gradle --no-daemon clean build -x test
+# Build without clean (incremental build)
+RUN --mount=type=cache,target=/home/gradle/.gradle/caches \
+    --mount=type=cache,target=/home/gradle/.gradle/wrapper \
+    gradle --no-daemon build -x test --build-cache
 
 FROM eclipse-temurin:24-jre
 
